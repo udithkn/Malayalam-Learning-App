@@ -57,7 +57,9 @@
             align-items: center;
             border-radius: 0.75rem;
             padding: 1.5rem 1rem;
-            word-wrap: break-word; /* Prevents text overflow */
+            /* More robust word wrapping for mobile */
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
         .card-front {
             background: rgba(31, 41, 55, 0.7);
@@ -83,7 +85,7 @@
             padding: 0 1.5rem;
         }
         .level-container.active .level-content {
-            max-height: 2000px;
+            max-height: 2000px; /* Increased to accommodate single column layout */
             padding: 1.5rem;
             padding-top: 0.75rem;
         }
@@ -155,23 +157,23 @@
     <div class="relative z-10 flex flex-col min-h-screen">
         <!-- Header -->
         <header class="header-glass text-white text-center py-4 shadow-lg sticky top-0">
-            <h1 class="text-3xl font-bold tracking-wider">Malayalam Learning Journey</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-wider">Malayalam Learning Journey</h1>
         </header>
 
         <!-- Main Content -->
-        <main class="flex-grow container mx-auto max-w-3xl p-4 md:p-6">
+        <main class="flex-grow container mx-auto max-w-4xl p-4 md:p-6">
             <!-- Progress Section -->
-            <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl shadow-lg p-6 mb-8 flex items-center space-x-6 opacity-0" style="animation: slideInUp 0.5s ease-out 0.2s forwards;">
-                <div class="relative w-28 h-28">
+            <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl shadow-lg p-4 sm:p-6 mb-8 flex items-center space-x-4 sm:space-x-6 opacity-0" style="animation: slideInUp 0.5s ease-out 0.2s forwards;">
+                <div class="relative w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0">
                     <svg class="w-full h-full" viewBox="0 0 100 100">
                         <circle class="text-gray-700" stroke-width="8" stroke="currentColor" fill="transparent" r="46" cx="50" cy="50" />
                         <circle id="progress-circle" class="progress-ring__circle text-purple-500" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="46" cx="50" cy="50" />
                     </svg>
-                    <div id="progress-text-circle" class="absolute inset-0 flex items-center justify-center text-2xl font-extrabold text-purple-400">0%</div>
+                    <div id="progress-text-circle" class="absolute inset-0 flex items-center justify-center text-xl sm:text-2xl font-extrabold text-purple-400">0%</div>
                 </div>
                 <div>
-                    <h2 class="text-2xl font-bold text-white">Your Progress</h2>
-                    <p id="progress-text-sub" class="text-gray-400 mt-1">Let's get started! Complete the first level.</p>
+                    <h2 class="text-xl sm:text-2xl font-bold text-white">Your Progress</h2>
+                    <p id="progress-text-sub" class="text-gray-400 mt-1 text-sm sm:text-base">Let's get started! Complete the first level.</p>
                 </div>
             </div>
 
@@ -272,19 +274,20 @@
             progressCircle.style.strokeDashoffset = offset;
             progressTextCircle.textContent = `${Math.round(percent)}%`;
         }
-
+        
+        // UPDATED: createCard function with responsive text sizes
         function createCard(word) {
             return `
-                <div class="card cursor-pointer group h-44">
+                <div class="card cursor-pointer group h-48">
                     <div class="card-inner">
                         <div class="card-front group-hover:shadow-xl group-hover:-translate-y-1.5 transition-all duration-300">
-                            <p class="text-xl font-semibold text-gray-200 text-center px-2">${word.en}</p>
+                            <p class="text-lg sm:text-xl font-semibold text-gray-200 text-center">${word.en}</p>
                             <i class="fas fa-sync-alt text-gray-500 mt-4 group-hover:rotate-180 transition-transform duration-500"></i>
                         </div>
                         <div class="card-back text-white shadow-lg">
-                            <p class="text-2xl font-bold malayalam-font px-2 break-words">${word.ml}</p>
-                            <p class="italic text-purple-200">${word.trans}</p>
-                            <p class="mt-1 text-purple-300 text-sm">(${word.hi})</p>
+                            <p class="text-xl sm:text-2xl font-bold malayalam-font break-words">${word.ml}</p>
+                            <p class="italic text-purple-200 break-words mt-1">${word.trans}</p>
+                            <p class="mt-1 text-purple-300 text-sm break-words">(${word.hi})</p>
                         </div>
                     </div>
                 </div>`;
@@ -304,9 +307,9 @@
             levelElement.innerHTML = `
                 <div class="level-header flex justify-between items-center p-5 cursor-pointer transition-colors duration-300">
                     <div class="flex items-center space-x-5">
-                        <span class="text-4xl">${level.icon}</span>
+                        <span class="text-3xl sm:text-4xl">${level.icon}</span>
                         <div>
-                            <h3 class="text-lg font-bold text-white">${mainTitle}</h3>
+                            <h3 class="text-md sm:text-lg font-bold text-white">${mainTitle}</h3>
                             <p class="text-sm text-gray-400">${subTitle}</p>
                         </div>
                     </div>
@@ -315,7 +318,8 @@
                     </span>
                 </div>
                 <div class="level-content bg-gray-900/50 border-t border-gray-700/50">
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+                    <!-- UPDATED: More responsive grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                         ${cardGridHtml}
                     </div>
                     <div class="text-center complete-btn-wrapper py-2">
@@ -337,8 +341,10 @@
             if (percentage === 100) {
                 progressTextSub.textContent = "Congratulations! You've mastered the basics!";
                 launchConfetti();
-            } else {
+            } else if (completedLevels > 0) {
                 progressTextSub.textContent = `You've completed ${completedLevels} of ${totalLevels} levels. Keep going!`;
+            } else {
+                 progressTextSub.textContent = "Let's get started! Complete the first level.";
             }
         }
 
