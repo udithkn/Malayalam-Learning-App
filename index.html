@@ -3,26 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Malayalam Learning App - Professional UI/UX</title>
+    <title>Malayalam Learning App - 3D Experience</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f5f3ff; /* violet-50 */
+            color: #e0e0e0; /* Lighter text for dark background */
+            overflow-x: hidden;
+        }
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
         }
         .malayalam-font {
             font-family: 'Noto Sans Malayalam', sans-serif;
         }
-        /* Glassmorphism Header */
         .header-glass {
-            background: linear-gradient(to right, rgba(168, 85, 247, 0.85), rgba(217, 70, 239, 0.85)); /* purple-500 to fuchsia-500 */
+            background: rgba(17, 24, 39, 0.6); /* Darker, semi-transparent */
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-        /* Card flip animation */
         .card {
             perspective: 1200px;
         }
@@ -31,7 +39,7 @@
             width: 100%;
             height: 100%;
             text-align: center;
-            transition: transform 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+            transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
             transform-style: preserve-3d;
         }
         .card.is-flipped .card-inner {
@@ -49,68 +57,73 @@
             align-items: center;
             border-radius: 0.75rem;
             padding: 1.5rem 1rem;
+            word-wrap: break-word; /* Prevents text overflow */
+        }
+        .card-front {
+            background: rgba(31, 41, 55, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .card-back {
+            background: linear-gradient(135deg, #8B5CF6, #D946EF);
             transform: rotateY(180deg);
         }
-        /* Level styles */
+        .level-container {
+            background: rgba(31, 41, 55, 0.5);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideInUp 0.6s ease-out forwards;
+        }
         .level-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.6s ease-in-out, padding-top 0.6s ease-in-out, padding-bottom 0.6s ease-in-out;
+            transition: max-height 0.7s ease-in-out, padding-top 0.7s ease-in-out, padding-bottom 0.7s ease-in-out;
             padding: 0 1.5rem;
         }
         .level-container.active .level-content {
             max-height: 2000px;
             padding: 1.5rem;
             padding-top: 0.75rem;
-            transition: max-height 1s ease-in-out, padding-top 0.6s ease-in-out, padding-bottom 0.6s ease-in-out;
         }
         .level-container.locked .level-header {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
         }
         .level-container.active {
-            box-shadow: 0 0 25px rgba(168, 85, 247, 0.5), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            border-color: #a855f7; /* purple-500 */
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
+            border-color: #a855f7;
         }
         .level-container:not(.locked) .level-header:hover {
-            background-color: #fdfcff;
+            background: rgba(55, 65, 81, 0.5);
         }
-        .level-container {
-            opacity: 0;
-            transform: translateY(20px);
-            animation: slideInUp 0.5s ease-out forwards;
-        }
-        /* Progress Circle */
         .progress-ring__circle {
-            transition: stroke-dashoffset 0.8s cubic-bezier(0.6, 0, 0.4, 1);
+            transition: stroke-dashoffset 1s cubic-bezier(0.6, 0, 0.4, 1);
             transform: rotate(-90deg);
             transform-origin: 50% 50%;
         }
-        /* Animations */
         @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(30px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes unlock-jiggle {
-            0%, 100% { transform: rotate(0); }
-            25% { transform: rotate(-8deg); }
-            75% { transform: rotate(8deg); }
+            0%, 100% { transform: rotate(0) scale(1); }
+            20% { transform: rotate(-10deg) scale(1.1); }
+            80% { transform: rotate(10deg) scale(1.1); }
         }
-        @keyframes fade-in {
-            from { opacity: 0; transform: scale(0.8); }
+        @keyframes fade-in-scale {
+            from { opacity: 0; transform: scale(0.7); }
             to { opacity: 1; transform: scale(1); }
         }
         .unlock-animation .fa-lock {
-            animation: unlock-jiggle 0.4s ease-in-out forwards;
+            animation: unlock-jiggle 0.5s ease-in-out forwards;
         }
         .unlock-animation .fa-chevron-down {
             opacity: 0;
-            transform: scale(0.8);
-            animation: fade-in 0.3s 0.4s ease-out forwards;
+            transform: scale(0.7);
+            animation: fade-in-scale 0.4s 0.5s ease-out forwards;
         }
-        /* Confetti */
         .confetti-container {
             position: fixed;
             top: 0;
@@ -122,8 +135,8 @@
         }
         .confetti {
             position: absolute;
-            width: 8px;
-            height: 16px;
+            width: 10px;
+            height: 20px;
             top: -20px;
             opacity: 0;
             animation: fall 5s linear forwards;
@@ -134,46 +147,109 @@
         }
     </style>
 </head>
-<body class="text-slate-800">
+<body class="bg-gray-900">
 
+    <canvas id="bg-canvas"></canvas>
     <div id="confetti-container" class="confetti-container"></div>
 
-    <div class="flex flex-col min-h-screen">
+    <div class="relative z-10 flex flex-col min-h-screen">
         <!-- Header -->
-        <header class="header-glass text-white text-center py-4 shadow-lg sticky top-0 z-20">
-            <h1 class="text-2xl font-bold tracking-tight">Malayalam Lessons</h1>
+        <header class="header-glass text-white text-center py-4 shadow-lg sticky top-0">
+            <h1 class="text-3xl font-bold tracking-wider">Malayalam Learning Journey</h1>
         </header>
 
         <!-- Main Content -->
-        <main class="flex-grow container mx-auto max-w-2xl p-4 md:p-6">
+        <main class="flex-grow container mx-auto max-w-3xl p-4 md:p-6">
             <!-- Progress Section -->
-            <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 flex items-center space-x-6 opacity-0" style="animation: slideInUp 0.5s ease-out forwards;">
-                <div class="relative w-24 h-24">
+            <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl shadow-lg p-6 mb-8 flex items-center space-x-6 opacity-0" style="animation: slideInUp 0.5s ease-out 0.2s forwards;">
+                <div class="relative w-28 h-28">
                     <svg class="w-full h-full" viewBox="0 0 100 100">
-                        <circle class="text-slate-200" stroke-width="10" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
-                        <circle id="progress-circle" class="progress-ring__circle text-purple-500" stroke-width="10" stroke-linecap="round" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
+                        <circle class="text-gray-700" stroke-width="8" stroke="currentColor" fill="transparent" r="46" cx="50" cy="50" />
+                        <circle id="progress-circle" class="progress-ring__circle text-purple-500" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="46" cx="50" cy="50" />
                     </svg>
-                    <div id="progress-text-circle" class="absolute inset-0 flex items-center justify-center text-xl font-extrabold text-purple-600">0%</div>
+                    <div id="progress-text-circle" class="absolute inset-0 flex items-center justify-center text-2xl font-extrabold text-purple-400">0%</div>
                 </div>
                 <div>
-                    <h2 class="text-xl font-bold text-slate-800">Your Learning Journey</h2>
-                    <p id="progress-text-sub" class="text-slate-500">Let's get started! Complete the first level.</p>
+                    <h2 class="text-2xl font-bold text-white">Your Progress</h2>
+                    <p id="progress-text-sub" class="text-gray-400 mt-1">Let's get started! Complete the first level.</p>
                 </div>
             </div>
 
-            <div id="game-mode-container" class="space-y-4">
+            <div id="game-mode-container" class="space-y-6">
                 <!-- Levels will be injected here by JS -->
             </div>
         </main>
 
         <!-- Footer -->
-        <footer class="bg-white text-slate-500 text-center py-4 mt-8 border-t">
-            <p>Ellam sheriyaakum!</p>
+        <footer class="text-gray-400 text-center py-6 mt-8">
+            <p>Ellam sheriyaakum! (Everything will be alright!)</p>
         </footer>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // --- Three.js 3D Background Setup ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById('bg-canvas'),
+            alpha: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+
+        const particlesCount = 5000;
+        const positions = new Float32Array(particlesCount * 3);
+        const colors = new Float32Array(particlesCount * 3);
+        const purpleColor = new THREE.Color("#8B5CF6");
+        const pinkColor = new THREE.Color("#D946EF");
+
+        for (let i = 0; i < particlesCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 10;
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 10;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+            
+            const mixedColor = purpleColor.clone().lerp(pinkColor, Math.random());
+            colors[i*3] = mixedColor.r;
+            colors[i*3+1] = mixedColor.g;
+            colors[i*3+2] = mixedColor.b;
+        }
+
+        const particlesGeometry = new THREE.BufferGeometry();
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.02,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particleSystem);
+
+        camera.position.z = 5;
+
+        const clock = new THREE.Clock();
+        const animate = function () {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+            particleSystem.rotation.y = elapsedTime * 0.05;
+            particleSystem.rotation.x = elapsedTime * 0.02;
+            renderer.render(scene, camera);
+        };
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+
+        // --- App Logic ---
         const levelData = [
             { title: 'Part 1: Greetings & Basics', icon: '👋', words: [ { en: 'Hello', ml: 'നമസ്കാരം', trans: 'Namaskaram', hi: 'नमस्कारम्' }, { en: 'How are you?', ml: 'സുഖമാണോ?', trans: 'Sukhamaano?', hi: 'सुखमाणो?' }, { en: 'I am fine', ml: 'എനിക്ക് സുഖമാണ്', trans: 'Enikku sukhamaanu', hi: 'एनिक्कु सुखमाणु' }, { en: 'What is your name?', ml: 'നിങ്ങളുടെ പേരെന്താണ്?', trans: 'Ningalude perenthaanu?', hi: 'निङ्ङळुडे पेरेन्ताणु?' }, { en: 'My name is...', ml: 'എന്റെ പേര്...', trans: 'Ente peru...', hi: 'एन्टे पेरु...' }, { en: 'Yes', ml: 'അതെ', trans: 'Athe', hi: 'अथे' }, { en: 'No', ml: 'ഇല്ല', trans: 'Illa', hi: 'इल्ल' }, { en: 'Thank you', ml: 'നന്ദി', trans: 'Nandi', hi: 'नन्दि' }, { en: 'Sorry', ml: 'ക്ഷമിക്കണം', trans: 'Kshamikkaṇam', hi: 'क्षमिक्कणम' } ] },
             { title: 'Part 2: Pronouns', subtitle: 'सर्वनाम', icon: '👤', words: [ { en: 'I', ml: 'ഞാൻ', trans: 'Njaan', hi: 'ञान (मैं)' }, { en: 'You (formal)', ml: 'നിങ്ങൾ', trans: 'Ningal', hi: 'निङ्ङळ (आप)' }, { en: 'You (informal)', ml: 'നീ', trans: 'Nee', hi: 'नी (तू)' }, { en: 'He', ml: 'അവൻ', trans: 'Avan', hi: 'अवन (वह)' }, { en: 'She', ml: 'അവൾ', trans: 'Aval', hi: 'अवळ (वह)' }, { en: 'They', ml: 'അവർ', trans: 'Avar', hi: 'अवर (वे)' }, { en: 'We', ml: 'നമ്മൾ', trans: 'Nammal', hi: 'नम्मळ (हम)' } ] },
@@ -199,16 +275,16 @@
 
         function createCard(word) {
             return `
-                <div class="card cursor-pointer group h-40">
+                <div class="card cursor-pointer group h-44">
                     <div class="card-inner">
-                        <div class="card-front bg-white shadow-md border border-slate-200 group-hover:shadow-xl group-hover:-translate-y-1.5 transition-all duration-300">
-                            <p class="text-xl font-semibold text-slate-700 text-center px-2">${word.en}</p>
-                            <i class="fas fa-sync-alt text-slate-300 mt-4 group-hover:rotate-180 transition-transform duration-500"></i>
+                        <div class="card-front group-hover:shadow-xl group-hover:-translate-y-1.5 transition-all duration-300">
+                            <p class="text-xl font-semibold text-gray-200 text-center px-2">${word.en}</p>
+                            <i class="fas fa-sync-alt text-gray-500 mt-4 group-hover:rotate-180 transition-transform duration-500"></i>
                         </div>
-                        <div class="card-back bg-purple-500 text-white shadow-lg">
-                            <p class="text-2xl font-bold malayalam-font px-4 break-words">${word.ml}</p>
-                            <p class="italic text-purple-100">${word.trans}</p>
-                            <p class="mt-1 text-purple-200 text-sm">(${word.hi})</p>
+                        <div class="card-back text-white shadow-lg">
+                            <p class="text-2xl font-bold malayalam-font px-2 break-words">${word.ml}</p>
+                            <p class="italic text-purple-200">${word.trans}</p>
+                            <p class="mt-1 text-purple-300 text-sm">(${word.hi})</p>
                         </div>
                     </div>
                 </div>`;
@@ -223,28 +299,28 @@
 
             const levelElement = document.createElement('div');
             levelElement.id = `level-${index + 1}`;
-            levelElement.className = `level-container bg-white rounded-2xl border-2 border-transparent shadow-md overflow-hidden transition-all duration-500 ${levelState}`;
-            levelElement.style.animationDelay = `${index * 100 + 100}ms`;
+            levelElement.className = `level-container rounded-2xl border-2 border-transparent shadow-lg overflow-hidden transition-all duration-500 ${levelState}`;
+            levelElement.style.animationDelay = `${index * 150 + 300}ms`;
             levelElement.innerHTML = `
-                <div class="level-header flex justify-between items-center p-5 cursor-pointer">
+                <div class="level-header flex justify-between items-center p-5 cursor-pointer transition-colors duration-300">
                     <div class="flex items-center space-x-5">
-                        <span class="text-3xl">${level.icon}</span>
+                        <span class="text-4xl">${level.icon}</span>
                         <div>
-                            <h3 class="text-lg font-bold text-slate-800">${mainTitle}</h3>
-                            <p class="text-sm text-slate-500">${subTitle}</p>
+                            <h3 class="text-lg font-bold text-white">${mainTitle}</h3>
+                            <p class="text-sm text-gray-400">${subTitle}</p>
                         </div>
                     </div>
-                    <span class="status-icon text-2xl text-slate-400 transition-transform duration-500">
+                    <span class="status-icon text-2xl text-gray-400 transition-transform duration-500 transform">
                         ${isFirst ? '<i class="fas fa-chevron-down"></i>' : '<i class="fas fa-lock"></i>'}
                     </span>
                 </div>
-                <div class="level-content bg-slate-50 border-t border-slate-200/80">
+                <div class="level-content bg-gray-900/50 border-t border-gray-700/50">
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
                         ${cardGridHtml}
                     </div>
                     <div class="text-center complete-btn-wrapper py-2">
-                        <button class="complete-btn bg-purple-500 text-white font-bold py-3 px-8 rounded-full hover:bg-purple-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0 active:shadow-md transition-all duration-300" data-level="${index + 1}">
-                            <i class="fas fa-check mr-2"></i> Mark as Complete
+                        <button class="complete-btn bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-8 rounded-full hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0 active:shadow-md transition-all duration-300" data-level="${index + 1}">
+                            <i class="fas fa-check-double mr-2"></i> Mark as Complete
                         </button>
                     </div>
                 </div>`;
@@ -259,10 +335,10 @@
             setProgress(percentage);
             
             if (percentage === 100) {
-                progressTextSub.textContent = "Congratulations! You've completed all levels!";
+                progressTextSub.textContent = "Congratulations! You've mastered the basics!";
                 launchConfetti();
             } else {
-                progressTextSub.textContent = `You've completed ${completedLevels} of ${totalLevels} levels.`;
+                progressTextSub.textContent = `You've completed ${completedLevels} of ${totalLevels} levels. Keep going!`;
             }
         }
 
@@ -273,9 +349,11 @@
                 const currentLevelEl = document.getElementById(`level-${currentLevelNum}`);
                 const nextLevelEl = document.getElementById(`level-${currentLevelNum + 1}`);
 
+                if(currentLevelEl.classList.contains('completed')) return;
+
                 currentLevelEl.classList.remove('active');
                 currentLevelEl.classList.add('completed');
-                currentLevelEl.querySelector('.status-icon').innerHTML = '<i class="fas fa-check-circle text-purple-500"></i>';
+                currentLevelEl.querySelector('.status-icon').innerHTML = '<i class="fas fa-check-circle text-green-400"></i>';
                 
                 const btnWrapper = completeButton.parentElement;
                 btnWrapper.style.transition = 'opacity 0.5s, transform 0.5s';
@@ -288,7 +366,6 @@
                 if (nextLevelEl) {
                     const statusIcon = nextLevelEl.querySelector('.status-icon');
                     statusIcon.classList.add('unlock-animation');
-                    statusIcon.innerHTML = '<i class="fas fa-lock"></i>';
                     
                     setTimeout(() => {
                         nextLevelEl.classList.remove('locked');
@@ -306,9 +383,13 @@
                 if (!parentContainer.classList.contains('locked')) {
                     const wasActive = parentContainer.classList.contains('active');
                     document.querySelectorAll('.level-container.active').forEach(el => {
-                        if (el !== parentContainer) el.classList.remove('active');
+                        if (el !== parentContainer) {
+                            el.classList.remove('active');
+                            el.querySelector('.level-header .status-icon').style.transform = 'rotate(0deg)';
+                        }
                     });
                     parentContainer.classList.toggle('active');
+                    header.querySelector('.status-icon').style.transform = parentContainer.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0deg)';
                 }
             }
             
@@ -320,14 +401,15 @@
         
         function launchConfetti() {
             const confettiContainer = document.getElementById('confetti-container');
-            const colors = ['#a855f7', '#d946ef', '#f472b6', '#fbbf24', '#ec4899'];
-            for (let i = 0; i < 100; i++) {
+            const colors = ['#a855f7', '#d946ef', '#f472b6', '#fbbf24', '#ec4899', '#34d399'];
+            for (let i = 0; i < 150; i++) {
                 const confetti = document.createElement('div');
                 confetti.classList.add('confetti');
                 confetti.style.left = `${Math.random() * 100}vw`;
                 confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.animationDelay = `${Math.random() * 2}s`;
-                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                confetti.style.animationDelay = `${Math.random() * 2.5}s`;
+                const rotation = Math.random() * 360;
+                confetti.style.transform = `rotate3d(${Math.random()}, ${Math.random()}, ${Math.random()}, ${rotation}deg)`;
                 confettiContainer.appendChild(confetti);
 
                 setTimeout(() => confetti.remove(), 5000);
@@ -337,7 +419,13 @@
         // Initial load
         setTimeout(() => {
             updateProgress();
-        }, 100);
+            // Open the first level by default
+            const firstLevel = document.getElementById('level-1');
+            if(firstLevel) {
+                firstLevel.classList.add('active');
+                firstLevel.querySelector('.level-header .status-icon').style.transform = 'rotate(180deg)';
+            }
+        }, 500);
     });
     </script>
 </body>
