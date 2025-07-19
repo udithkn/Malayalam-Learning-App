@@ -290,6 +290,43 @@
         progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
         progressCircle.style.strokeDashoffset = circumference;
 
+        // --- NEW: Audio Caching and Preloading System ---
+        const audioCache = new Map();
+        let currentAudio = null;
+
+        async function fetchAndCacheAudio(word) {
+            if (audioCache.has(word)) return; // Already cached or being fetched
+
+            // Mark as "fetching" to avoid multiple requests
+            audioCache.set(word, 'fetching'); 
+            
+            try {
+                const targetUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(word)}&tl=ml&client=tw-ob`;
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+                
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`Failed to fetch audio for "${word}"`);
+
+                const audioBlob = await response.blob();
+                const objectUrl = URL.createObjectURL(audioBlob);
+                audioCache.set(word, objectUrl); // Store the playable URL
+                console.log(`Cached audio for: ${word}`);
+            } catch (error) {
+                console.error(error);
+                audioCache.delete(word); // Remove failed fetch attempt
+            }
+        }
+
+        function preloadLevelAudio(levelIndex) {
+            const level = levelData[levelIndex];
+            if (level && level.words) {
+                console.log(`Preloading audio for Level ${levelIndex + 1}...`);
+                level.words.forEach(word => fetchAndCacheAudio(word.ml));
+            }
+        }
+        // --- END of Caching System ---
+
+
         function setProgress(percent) {
             const offset = circumference - percent / 100 * circumference;
             progressCircle.style.strokeDashoffset = offset;
@@ -371,34 +408,33 @@
         }
 
         // --- Main event listener for all interactions ---
-        let currentAudio = null; // Keep track of the currently playing audio
-
-        container.addEventListener('click', function(e) {
-            // --- Handle Pronunciation with AI Voice ---
+        container.addEventListener('click', async function(e) {
+            // --- Handle Pronunciation with Caching ---
             const speakButton = e.target.closest('.speak-btn');
             if (speakButton) {
-                e.stopPropagation(); // Prevents the card from flipping
+                e.stopPropagation();
                 const textToSpeak = speakButton.dataset.text;
                 
-                if (textToSpeak) {
-                    // Stop any currently playing audio
-                    if (currentAudio) {
-                        currentAudio.pause();
-                        currentAudio = null;
-                    }
-
-                    // Use Google Translate's TTS as a high-quality AI voice source
-                    const encodedText = encodeURIComponent(textToSpeak);
-                    const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=ml&client=tw-ob`;
-
-                    // Create and play the new audio
-                    currentAudio = new Audio(audioUrl);
-                    currentAudio.play().catch(err => {
-                        console.error("Error playing AI voice:", err);
-                        // Optional: Display an error to the user
-                    });
+                if (currentAudio) {
+                    currentAudio.pause();
                 }
-                return; // Exit after handling speech
+
+                if (audioCache.has(textToSpeak) && audioCache.get(textToSpeak) !== 'fetching') {
+                    // Play from cache if available
+                    const audioUrl = audioCache.get(textToSpeak);
+                    currentAudio = new Audio(audioUrl);
+                    currentAudio.play();
+                } else {
+                    // Fetch on-demand if not in cache (e.g., user clicks too fast)
+                    console.log("Cache miss, fetching on demand:", textToSpeak);
+                    await fetchAndCacheAudio(textToSpeak);
+                    if (audioCache.has(textToSpeak) && audioCache.get(textToSpeak) !== 'fetching') {
+                         const audioUrl = audioCache.get(textToSpeak);
+                         currentAudio = new Audio(audioUrl);
+                         currentAudio.play();
+                    }
+                }
+                return;
             }
 
             // --- Handle Level Completion ---
@@ -429,6 +465,8 @@
                     setTimeout(() => {
                         nextLevelEl.classList.remove('locked');
                         nextLevelEl.classList.add('active');
+                        // Preload audio for the newly unlocked level
+                        preloadLevelAudio(currentLevelNum); 
                         statusIcon.innerHTML = '<i class="fas fa-chevron-down"></i>';
                         statusIcon.classList.remove('unlock-animation');
                         nextLevelEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -485,6 +523,8 @@
             if(firstLevel) {
                 firstLevel.classList.add('active');
                 firstLevel.querySelector('.level-header .status-icon').style.transform = 'rotate(180deg)';
+                // Preload audio for the first level on page load
+                preloadLevelAudio(0);
             }
         }, 500);
     });
