@@ -69,6 +69,27 @@
             background: linear-gradient(135deg, #8B5CF6, #D946EF);
             transform: rotateY(180deg);
         }
+        /* Style for the new speak button */
+        .speak-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+        .speak-btn:hover {
+            background: rgba(0,0,0,0.4);
+        }
+        .speak-btn:active {
+            transform: scale(0.9);
+        }
         .level-container {
             background: rgba(31, 41, 55, 0.5);
             backdrop-filter: blur(5px);
@@ -85,7 +106,6 @@
             padding: 0 1.5rem;
         }
         .level-container.active .level-content {
-            /* UPDATED: Increased max-height to accommodate more content */
             max-height: 3000px; 
             padding: 1.5rem;
             padding-top: 0.75rem;
@@ -185,7 +205,7 @@
 
         <!-- Footer -->
         <footer class="text-gray-400 text-center py-6 mt-8">
-            <p>Ellam sheriyaakum! (Everything will be alright!)</p>
+            <p>എല്ലാം ശരിയാകും! (Ellam sheriyaakum! - Everything will be alright!)</p>
         </footer>
     </div>
 
@@ -276,7 +296,6 @@
             progressTextCircle.textContent = `${Math.round(percent)}%`;
         }
         
-        // UPDATED: createCard function with responsive text sizes
         function createCard(word) {
             return `
                 <div class="card cursor-pointer group h-48">
@@ -286,6 +305,9 @@
                             <i class="fas fa-sync-alt text-gray-500 mt-4 group-hover:rotate-180 transition-transform duration-500"></i>
                         </div>
                         <div class="card-back text-white shadow-lg">
+                            <button class="speak-btn text-purple-200 hover:text-white" data-text="${word.ml}" aria-label="Pronounce word">
+                                <i class="fas fa-volume-up text-lg"></i>
+                            </button>
                             <p class="text-xl sm:text-2xl font-bold malayalam-font break-words">${word.ml}</p>
                             <p class="italic text-purple-200 break-words mt-1">${word.trans}</p>
                             <p class="mt-1 text-purple-300 text-sm break-words">(${word.hi})</p>
@@ -319,7 +341,6 @@
                     </span>
                 </div>
                 <div class="level-content bg-gray-900/50 border-t border-gray-700/50">
-                    <!-- UPDATED: More responsive grid -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                         ${cardGridHtml}
                     </div>
@@ -349,7 +370,38 @@
             }
         }
 
+        // --- Main event listener for all interactions ---
+        let currentAudio = null; // Keep track of the currently playing audio
+
         container.addEventListener('click', function(e) {
+            // --- Handle Pronunciation with AI Voice ---
+            const speakButton = e.target.closest('.speak-btn');
+            if (speakButton) {
+                e.stopPropagation(); // Prevents the card from flipping
+                const textToSpeak = speakButton.dataset.text;
+                
+                if (textToSpeak) {
+                    // Stop any currently playing audio
+                    if (currentAudio) {
+                        currentAudio.pause();
+                        currentAudio = null;
+                    }
+
+                    // Use Google Translate's TTS as a high-quality AI voice source
+                    const encodedText = encodeURIComponent(textToSpeak);
+                    const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=ml&client=tw-ob`;
+
+                    // Create and play the new audio
+                    currentAudio = new Audio(audioUrl);
+                    currentAudio.play().catch(err => {
+                        console.error("Error playing AI voice:", err);
+                        // Optional: Display an error to the user
+                    });
+                }
+                return; // Exit after handling speech
+            }
+
+            // --- Handle Level Completion ---
             const completeButton = e.target.closest('.complete-btn');
             if (completeButton) {
                 const currentLevelNum = parseInt(completeButton.dataset.level);
@@ -384,6 +436,7 @@
                 }
             }
 
+            // --- Handle Level Toggling ---
             const header = e.target.closest('.level-header');
             if (header) {
                 const parentContainer = header.parentElement;
@@ -400,6 +453,7 @@
                 }
             }
             
+            // --- Handle Card Flipping ---
             const card = e.target.closest('.card');
             if (card) {
                 card.classList.toggle('is-flipped');
